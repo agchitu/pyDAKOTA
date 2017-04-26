@@ -1,17 +1,17 @@
 # Copyright 2013 National Renewable Energy Laboratory (NREL)
-# 
+#
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
 #    You may obtain a copy of the License at
-# 
+#
 #        http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 #    Unless required by applicable law or agreed to in writing, software
 #    distributed under the License is distributed on an "AS IS" BASIS,
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
-# 
+#
 # ++==++==++==++==++==++==++==++==++==++==
 """
 Generic DAKOTA driver.
@@ -41,11 +41,30 @@ import pyDAKOTA
 if sys.platform in ('cygwin', 'win32'):
     _HAVE_MPI = False
 else:
-    _HAVE_MPI = True
+    _HAVE_MPI = False
 
+class DakotaBase(object):
+    """ Base class for a DAKOTA 'driver'. """
+
+    def __init__(self):
+        self.input = DakotaInput()
+
+    def run_dakota(self, infile='dakota.in', mpi_comm=None, stdout=None, stderr=None):
+        """
+        Write `self.input` to `infile`, providing `self` as `data`.
+        Then run DAKOTA with that input, MPI specification, and files.
+        DAKOTA will then call our :meth:`dakota_callback` during the run.
+        """
+        self.input.write_input(infile, data=self)
+        #if comm.Get_rank() == 0: self.input.write_input(infile, data=self)
+        run_dakota(infile, mpi_comm, stdout, stderr)
+
+    def dakota_callback(self, **kwargs):
+        """ Invoked from global :meth:`dakota_callback`, must be overridden. """
+        raise NotImplementedError('dakota_callback')
 
 class DakotaInput(object):
-    """ simple mechanism where we store the actual strings that will go in each 
+    """ simple mechanism where we store the actual strings that will go in each
     section of the input file
         # provide your own input with key word arguments,
         # e.g.: DakotaInput(method = ["multidim_parameter_study", "partitions = %d %d" % (nx, nx)])
@@ -67,7 +86,7 @@ class DakotaInput(object):
             "    lower_bounds    3    5",
             "    upper_bounds    4    6",
             "    descriptors   'x1' 'x2'",
-        ]	        
+        ]
         self.interface = [
             "direct",
             "    analysis_drivers = 'NRELpython'",
@@ -78,7 +97,7 @@ class DakotaInput(object):
             "no_gradients",
             "no_hessians",
         ]
-        
+
         for key in kwargs:
             setattr(self, key, kwargs[key])
 
@@ -151,7 +170,7 @@ def run_dakota(infile, data=None, mpi_comm=None, stdout=None, stderr=None):
             raise exc.type, exc.value, exc.traceback
 
 
-def dakota_callback(**kwargs):    
+def dakota_callback(**kwargs):
     """
     Generic callback from DAKOTA, forwards parameters to driver provided as
     the ``data`` argument to :meth:`run_dakota`.
@@ -192,11 +211,10 @@ def dakota_callback(**kwargs):
     ========== ==============================================
 
     """
-    if 'user_data' in kwargs:        
+    if 'user_data' in kwargs:
         driver = kwargs['user_data']
         return driver.dakota_callback(**kwargs)
     else:
         msg = '%s: no user_data passed to dakota_callback' % os.getpid()
         logging.error(msg)
         raise RuntimeError(msg)
-

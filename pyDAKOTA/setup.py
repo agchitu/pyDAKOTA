@@ -173,12 +173,12 @@ else:
     # the other (not pyDAKOTA.so) shared libraries that are part of the egg.
     LD_FLAGS = ['-Wl,-z origin',
                 '-Wl,-rpath=${ORIGIN}:${ORIGIN}/../'+egg_dir]
-    EXTRA_LIBS = ['DGraphics', 'gfortran',
-                  'SM', 'ICE', 'Xext', 'Xm', 'Xt', 'X11', 'Xpm', 'Xmu']
+    #EXTRA_LIBS = ['DGraphics', 'gfortran',
+    #              'SM', 'ICE', 'Xext', 'Xm', 'Xt', 'X11', 'Xpm', 'Xmu']
     EGG_LIBS = glob.glob(os.path.join(dakota_lib, '*.so'))
     EGG_LIBS.extend(glob.glob(os.path.join(dakota_bin, '*.so')))
-    NEED_MPI = True
-    HAVE_ABORT_RETURNS = True
+    NEED_MPI = False
+    HAVE_ABORT_RETURNS = False
 
 
 sources = [
